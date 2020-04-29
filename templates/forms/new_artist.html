@@ -37,6 +37,16 @@ block content %}
       commas', id=form.state, autofocus = true) }}
     </div>
     <div class="form-group">
+      <label for="website">website</label>
+      {{ form.website(class_ = 'form-control', placeholder='website', autofocus
+      = true) }}
+    </div>
+    <div class="form-group">
+      <label for="description">description</label>
+      {{ form.description(class_ = 'form-control', placeholder='description',
+      autofocus = true) }}
+    </div>
+    <div class="form-group">
       <label for="genres">Facebook Link</label>
       {{ form.facebook_link(class_ = 'form-control', placeholder='http://',
       id=form.state, autofocus = true) }}

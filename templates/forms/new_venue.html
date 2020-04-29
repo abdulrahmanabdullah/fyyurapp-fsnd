@@ -41,6 +41,16 @@ block content %}
       autofocus = true) }}
     </div>
     <div class="form-group">
+      <label for="website">website</label>
+      {{ form.website(class_ = 'form-control', placeholder='website', autofocus
+      = true) }}
+    </div>
+    <div class="form-group">
+      <label for="description">description</label>
+      {{ form.description(class_ = 'form-control', placeholder='We are ...',
+      autofocus = true) }}
+    </div>
+    <div class="form-group">
       <label for="genres">Genres</label>
       <small>Ctrl+Click to select multiple</small>
       {{ form.genres(class_ = 'form-control', placeholder='Genres, separated by

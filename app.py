@@ -240,16 +240,34 @@ def show_venue(venue_id):
     venue = {}
     try:
         _venue = Venue.query.get(venue_id)
+        # Get bind date in show tables based on venue id .
         show = Show.query.filter_by(venue_id=venue_id).all()
-        artist = Artist.query.get(_venue.shows[0].artist_id)
-        start_time = show[0].start_time
-        convertedTime = format_datetime(start_time.strftime('%Y-%m-%d'))
-        now = datetime.utcnow()
-        upcomingShow = db.session.query(Venue).join(
-            Show, Show.venue_id == venue_id).filter(Show.start_time > now).all()
-        pastShow = db.session.query(Venue).join(
-            Show, Show.venue_id == venue_id).filter(Show.start_time < now).count()
-        print(f'upcoming show = {upcomingShow} 🔦')
+        past_shows = []
+        upcomingShow = []
+        if show:  # If venues and Artist already bind , get these data .
+            now = datetime.now().strftime('%Y-%m-%d')  # Get current date
+            # Fetch all upcoming shows with Right join table
+            upcomingShowQuery = db.session.query(Artist.id, Artist.name, Artist.image_link, Show.start_time)\
+                .join(Show, Artist.id == Show.artist_id).filter(Show.start_time > now).filter(Show.venue_id == venue_id).all()
+            for item in upcomingShowQuery:
+                upcomingShow.append({
+                    "artist_id": item.id,
+                    "artist_name": item.name,
+                    "artist_image_link": item.image_link,
+                    "start_time": format_datetime(item.start_time.strftime('%Y-%m-%d'))
+                })
+            # Fetch all past shows with left join table
+            pastShowQuery = db.session.query(Artist.id, Artist.name, Artist.image_link, Show.start_time)\
+                .join(Show, Artist.id == Show.artist_id).filter(Show.start_time < now)\
+                .filter(Show.venue_id == venue_id).all()
+
+            for artist in pastShowQuery:
+                past_shows.append({
+                    "artist_id": artist.id,
+                    "artist_name": artist.name,
+                    "artist_image_link": artist.image_link,
+                    "start_time": format_datetime(artist.start_time.strftime('%Y-%m-%d'))
+                })
         venue = {
             "id": _venue.id,
             "name": _venue.name,
@@ -263,22 +281,14 @@ def show_venue(venue_id):
             "seeking_talent": _venue.seeking_talent,
             "seeking_description": _venue.seeking_description,
             "image_link": _venue.image_link,
-            "past_shows": [{
-                "artist_id": artist.id,
-                "artist_name": artist.name,
-                "artist_image_link": artist.image_link,
-                "start_time": convertedTime
-            }],
+            "past_shows": past_shows,
             "upcoming_shows": upcomingShow,
-            "past_shows_count": pastShow,
+            "past_shows_count": len(past_shows),
             "upcoming_shows_count": len(upcomingShow),
         }
     except Exception as inst:
-        print('something happend 🔍', inst)
-        db.session.rollback()
-    finally:
-        db.session.close()
-    return render_template('pages/show_venue.html', venue=venue, datetime=convertedTime)
+        print('something happend ❌ ❌', inst)
+    return render_template('pages/show_venue.html', venue=venue, datetime=datetime_)
 
 #  Create Venue
 #  ----------------------------------------------------------------
@@ -302,10 +312,15 @@ def create_venue_submission():
         address = request.form['address']
         phone = request.form['phone']
         image_link = request.form['image_link']
+        website = request.form['website']
+        description = request.form['description']
         genres = request.form.getlist('genres')
         facebook_link = request.form['facebook_link']
+        seeking_talent = True
         venue = Venue(name=name, city=city, state=state, address=address,
-                      phone=phone, image_link=image_link, genres=genres, facebook_link=facebook_link)
+                      phone=phone, image_link=image_link, genres=genres,
+                      website=website, facebook_link=facebook_link,
+                      seeking_talent=seeking_talent, seeking_description=description)
         db.session.add(venue)
         db.session.commit()
         # on successful db insert, flash success
@@ -376,15 +391,37 @@ def show_artist(artist_id):
     # shows the venue page with the given venue_id
     # TODO: replace with real venue data from the venues table, using venue_id
     artist = Artist.query.get(artist_id)
-    venue = Venue.query.get(artist.shows[0].venue_id)
     show = Show.query.filter_by(artist_id=artist_id).all()
-    start_time = show[0].start_time
-    convertedTime = format_datetime(start_time.strftime('%Y-%m-%d'))
-    now = datetime.utcnow()
-    upcomingShow = db.session.query(Artist).join(
-        Show, Show.artist_id == artist_id).filter(Show.start_time > now).all()
-    pastShow = db.session.query(Artist).join(
-        Show, Show.artist_id == artist_id).filter(Show.start_time < now).count()
+    past_shows = []
+    upcomingShow = []
+    if show:
+        start_time = show[0].start_time
+        now = datetime.now().strftime('%Y-%m-%d')
+
+        # Fetch all past venues
+        pastShowQuery = db.session.query(Venue.id, Venue.name, Venue.image_link, Show.start_time)\
+            .join(Venue, Venue.id == Show.venue_id)\
+            .filter(Show.artist_id == artist_id)\
+            .filter(Show.start_time < now).all()
+        for venue in pastShowQuery:
+            past_shows.append({
+                "venue_id": venue.id,
+                "venue_name": venue.name,
+                "venue_image_link": venue.image_link,
+                "start_time": format_datetime(venue.start_time.strftime('%Y-%m-%d'))
+            })
+        # Fetch all venue in the future
+        upcomingShowQuery = db.session.query(Venue.id, Venue.name, Venue.image_link, Show.start_time)\
+            .join(Venue, Venue.id == Show.venue_id)\
+            .filter(Show.artist_id == artist_id)\
+            .filter(Show.start_time > now).all()
+        for venue in upcomingShowQuery:
+            upcomingShow.append({
+                "venue_id": venue.id,
+                "venue_name": venue.name,
+                "venue_image_link": venue.image_link,
+                "start_time": format_datetime(venue.start_time.strftime('%Y-%m-%d'))
+            })
     data = {
         "id": artist.id,
         "name": artist.name,
@@ -397,14 +434,9 @@ def show_artist(artist_id):
         "seeking_venue": artist.seeking_venue,
         "seeking_description": artist.seeking_description,
         "image_link": "https://images.unsplash.com/photo-1549213783-8284d0336c4f?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=300&q=80",
-        "past_shows": [{
-            "venue_id": venue.id,
-            "venue_name": venue.name,
-            "venue_image_link": venue.image_link,
-            "start_time": convertedTime
-        }],
+        "past_shows": past_shows,
         "upcoming_shows": upcomingShow,
-        "past_shows_count": pastShow,
+        "past_shows_count": len(past_shows),
         "upcoming_shows_count": len(upcomingShow),
     }
     return render_template('pages/show_artist.html', artist=data)
@@ -489,12 +521,16 @@ def create_artist_submission():
         image_link = request.form['image_link']
         genres = request.form.getlist('genres')
         facebook_link = request.form['facebook_link']
-        seeking_venue = False
+        website = request.form['website']
+        seeking_venue = True
+        description = request.form['description']
         artist = Artist(name=name, city=city, state=state,
                         phone=phone,
                         genres=genres,
                         image_link=image_link,
-                        facebook_link=facebook_link, seeking_venue=seeking_venue)
+                        website=website,
+                        facebook_link=facebook_link, seeking_venue=seeking_venue,
+                        seeking_description=description)
         db.session.add(artist)
         db.session.commit()
     except Exception as exp:
