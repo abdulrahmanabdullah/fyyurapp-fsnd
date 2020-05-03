@@ -2,9 +2,18 @@
 block content %}
 <div class="row">
   <div class="col-sm-6">
-    <h1 class="monospace">
-      {{ venue.name }}
-    </h1>
+    <div
+      style="
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+      "
+    >
+      <h1 class="monospace">
+        {{ venue.name }}
+      </h1>
+      <a href="{{venue.id}}/edit">Edit</a>
+    </div>
     <p class="subtitle">
       ID: {{ venue.id }}
     </p>
@@ -65,7 +74,7 @@ block content %}
     {%for show in venue.upcoming_shows %}
     <div class="col-sm-4">
       <div class="tile tile-show">
-        <img src="{{ show.artist_image_link }}" alt="Show Artist Image" />
+        <img src="{{ show.venue_image_link }}" alt="Show Artist Image" />
         <h5>
           <a href="/artists/{{ show.artist_id }}">{{ show.artist_name }}</a>
         </h5>
