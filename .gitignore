@@ -1,4 +1,5 @@
-__pycache__
-.vscode 
-env
-migrations
+__pycache__/
+.vscode/ 
+env/
+migrations/
+error.log
